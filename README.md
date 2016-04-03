@@ -1,4 +1,4 @@
-# moonQuery
+# moonQuery.js
 Currently in ***beta***.
 
 Yes, moonQuery is **lightweight**!  2.54KB minified, 1.05KB minified and gzipped.
