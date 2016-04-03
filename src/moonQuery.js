@@ -1,7 +1,8 @@
 (function () {
     "use strict";
-	Array.prototype.where = where;
-	Array.prototype.select = select;
+    var SETTINGS = {
+        "performanceLogging": false
+    };
 	
     /* WHERE */
 	function where(cond) {
@@ -65,8 +66,11 @@
 		
 		for (var i = 0, l = cond.length; i < l; i++) {
 			var v = cond[i];
+            var vType = v.constructor.name;
 			
-            if ((v.constructor.name == "RegExp" && applyCondRegExp(x, v)) || v == x) {
+            if ((vType == "RegExp" && applyCondRegExp(x, v)) ||
+                (x && vType == "Object" && applyCond(x, v)) ||
+                v == x) {
 				condTrue = true;
 				break;
 			}
@@ -78,15 +82,19 @@
 	function applyCondObj(x, cond) {
 		var gtValue = cond.$gt;
 		var ltValue = cond.$lt;
+        var gtValueValid = !isNullOrUndefined(gtValue);
+        var ltValueValid = !isNullOrUndefined(ltValue);
 		var condTrue = false;
 				
-		if (!isNullOrUndefined(gtValue) && !isNullOrUndefined(ltValue)) {
+		if (gtValueValid && ltValueValid) {
 			condTrue = x > gtValue && x < ltValue;
-		} else if (!isNullOrUndefined(gtValue) && isNullOrUndefined(ltValue)) {
+		} else if (gtValueValid && !ltValueValid) {
 			condTrue = x > gtValue;
-		} else if (!isNullOrUndefined(ltValue) && isNullOrUndefined(gtValue)) {
+		} else if (ltValueValid && !gtValueValid) {
 			condTrue = x < ltValue;
-		}
+		} else if (!ltValueValid && !gtValueValid && x) {
+            condTrue = applyCond(x, cond);
+        }
 		
 		return condTrue;
 	}
@@ -124,16 +132,122 @@
         
         return result.length == 1 ? result[0] : result;
     }
+    
+    /* SUM */
+    function sum(columns) {
+        if (!columns || typeof(columns) !== "object") {
+			consoleWarn("No valid columns");
+			return this;
+		}
+        
+        var result = {};
+        var resultKeys = null;
+        
+        for (var i = 0, l = this.length; i < l; i++) {
+			var x = this[i];
+            
+			if (!x || typeof (x) !== "object") {
+				continue;				
+			}
+			
+			for (var key in columns) {
+                result[key] = result[key] > 0 ? result[key] + parseFloat(x[key]) : parseFloat(x[key]);
+            }
+		}
+        
+        resultKeys = Object.keys(result);
+        
+        return resultKeys.length > 1 ? result : result[resultKeys[0]];
+    }
 	
-	function consoleWarn(warnMsg) {
+    /* UTILITY */
+    function performanceLoggingWrapper(that, args, fn, fnName) {
+        if (SETTINGS.performanceLogging) {
+            var startTime = new Date().getTime();    
+        }
+        
+        var results = fn.apply(that, args);
+        
+        if (SETTINGS.performanceLogging) {
+            var duration = new Date().getTime() - startTime;
+            consoleLog("Took " + duration + "ms to execute " + fnName, "Performance Logging");
+        }
+        
+        return results;
+    }
+    
+	function consoleWarn(warnMsg, fnName) {
         if (console && console.warn) {
-            console.warn("jsQuery: %s", warnMsg);
+            console.warn("moonQuery%s: %s", fnName ? "[" + fnName + "]" : "", warnMsg);
         } else if (console && console.log) {
-            console.log("jsQuery: %s", warnMsg);  
+            console.log("moonQuery%s: %s", fnName ? "[" + fnName + "]" : "", warnMsg);  
+        }
+	}
+    
+	function consoleLog(msg, fnName) {
+        if (console && console.log) {
+            console.log("moonQuery%s: %s", fnName ? "[" + fnName + "]" : "", msg);  
         }
 	}
 	
 	function isNullOrUndefined(v) {
 		return v === null || v === undefined;
 	}
+    
+    function objectKeysPolyfill() {
+        // From https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/keys
+        if (!Object.keys) {
+        Object.keys = (function() {
+            "use strict";
+            var hasOwnProperty = Object.prototype.hasOwnProperty,
+                hasDontEnumBug = !({ toString: null }).propertyIsEnumerable("toString"),
+                dontEnums = [
+                "toString",
+                "toLocaleString",
+                "valueOf",
+                "hasOwnProperty",
+                "isPrototypeOf",
+                "propertyIsEnumerable",
+                "constructor"
+                ],
+                dontEnumsLength = dontEnums.length;
+
+            return function(obj) {
+            if (typeof obj !== "object" && (typeof obj !== "function" || obj === null)) {
+                throw new TypeError("Object.keys called on non-object");
+            }
+
+            var result = [], prop, i;
+
+            for (prop in obj) {
+                if (hasOwnProperty.call(obj, prop)) {
+                result.push(prop);
+                }
+            }
+
+            if (hasDontEnumBug) {
+                for (i = 0; i < dontEnumsLength; i++) {
+                if (hasOwnProperty.call(obj, dontEnums[i])) {
+                    result.push(dontEnums[i]);
+                }
+                }
+            }
+            return result;
+            };
+        }());
+        }
+    }
+    
+    /* RUN CODE */
+    objectKeysPolyfill();
+	Array.prototype.where = function () { 
+        return performanceLoggingWrapper(this, arguments, where, "where");
+    };
+	Array.prototype.select = function () { 
+        return performanceLoggingWrapper(this, arguments, select, "select");
+    };
+	Array.prototype.sum = function () { 
+        return performanceLoggingWrapper(this, arguments, sum, "sum");
+    };
+    Array.prototype.moonQuerySettings = SETTINGS;
 })();
