@@ -59,5 +59,6 @@ To sum properties.  Currently cannot sum properties that are not in the 1st leve
 ##### Example
 Using the example array above,
 * to sum up the year `arr.sum({ "year": true });` returns `6027`
+
 ### Performance Logging
 To turn on performance logging set `Array.prototype.moonQuerySetting.performanceLogging = true`.  This will show console logs of how long it takes to run the functions in moonQuery.
