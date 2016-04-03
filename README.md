@@ -10,7 +10,8 @@ This library **SHOULD NOT** encourage developers to build applications where you
 ### Where functionality
 Main functionality of this library is to query an array of objects with properties.
 ##### Example
-```var arr = [
+```
+var arr = [
     { 
         "make": "BMW", 
         "model": "116i M Sport",
