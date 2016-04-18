@@ -35,7 +35,7 @@
 		
 		for (var key in cond) {
 			var condValue = cond[key];
-			var condValueType = condValue.constructor.name;
+			var condValueType = condValue && condValue.constructor ? condValue.constructor.name : null;
 			var xValue = x[key];
 			
 			switch (condValueType) {
