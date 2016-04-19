@@ -82,6 +82,8 @@
 	function applyCondObj(x, cond) {
 		var gtValue = cond.$gt;
 		var ltValue = cond.$lt;
+		var ntValue = cond.$nt;
+		var ntValueExists = "$nt" in cond;
         var gtValueValid = !isNullOrUndefined(gtValue);
         var ltValueValid = !isNullOrUndefined(ltValue);
 		var condTrue = false;
@@ -94,7 +96,9 @@
 			condTrue = x < ltValue;
 		} else if (!ltValueValid && !gtValueValid && x) {
             condTrue = applyCond(x, cond);
-        }
+        } else if (!isNullOrUndefined(ntValueExists)) {
+			condTrue = x != ntValue;
+		}
 		
 		return condTrue;
 	}
